@@ -1,0 +1,9 @@
+{
+  "DisplayMode": {
+    "Console": "1",
+    "ISE Grid": "2",
+    "Text File": "3",
+    "Csv File": "4"
+  },
+  "ShowProgress": true
+}

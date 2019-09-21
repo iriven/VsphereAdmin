@@ -1,0 +1,13 @@
+{
+  "Inventory": {
+    "Aubervilliers": "opsidiasaubvc01-adm.bagnolet.francetelecom.fr",
+    "Lyon": "opsidiasaubvc02-adm.bagnolet.francetelecom.fr",
+    "Montsouri": "opsidiasmonvc01-adm.intranet-paris.francetelecom.fr",
+    "Vdr": "opsidiasmonvc01-adm.intranet-paris.francetelecom.fr"
+  },
+  "Credentials": {
+    "Login": "sjhc1170",
+    "Persistent": true,
+    "InvalidCertificateAction": "ignore"
+  }
+}

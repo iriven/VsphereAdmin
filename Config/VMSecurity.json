@@ -1,0 +1,29 @@
+{
+	"ExtraOptions" :{
+		"isolation.tools.diskWiper.disable" : true,
+	    "isolation.tools.diskShrink.disable" : true,
+		"RemoteDisplay.maxConnections" : "2",
+		"isolation.tools.copy.disable" : true,
+		"isolation.tools.paste.disable" : true,
+		"isolation.tools.setGUIOptions.enable" : false,
+		"isolation.tools.dnd.disable" : true,
+		"isolation.device.connectable.disable" : true,
+		"isolation.device.edit.disable" : true,
+		"vmci0.unrestricted" : false,
+		"log.rotateSize" : "1000000",
+		"log.keepOld" : "10",
+		"tools.setInfo.sizeLimit" : "1048576",
+		"guest.command.enabled" : false,
+		"tools.guestlib.enableHostInfo" : false,
+		"isolation.tools.unity.push.update.disable" : true,
+		"isolation.tools.ghi.launchmenu.change" : true,
+		"isolation.tools.memSchedFakeSampleStats.disable" : true,
+		"isolation.tools.getCreds.disable" : true,
+		"RemoteDisplay.vnc.enabled" : false,
+		"floppyX.present" : false,
+		"SerialX.present" : false,
+		"parallelX.present" : false,
+		"usb.present" : false,
+		"ideX:Y.present" : false
+	}
+}

@@ -1,0 +1,99 @@
+{ 
+    "VirtualMachineDeployment" :{
+        "DataCenter":"", 
+        "Domain":"",            
+        "Vcenter":"",    
+        "Cluster":"",                      
+        "CustomSpec":"",         
+        "Folder":"",            
+        "DataStore":"",           
+        "DiskFormat":"Thin",
+        "DeploymentMethod":"Standard",
+
+        "DeploymentMethodSettings":{
+
+            "Incremental":{
+                "VMName":{
+                    "Prefix": "Opsidlog", 
+                    "Suffix": "m", 
+                    "delimiter": "_"
+                },
+                "AutoIncrementValue":"1",
+                "AutoIncrementMaxValue":"100",
+                "cpucount":"",
+                "memsizeGB":"",
+                "DiskCapacityGB":"",
+                "Template":"", 
+                "DNSServers":"IP1,IP2,...,IPn",
+                "NTPServers":"IP1,IP2,...,IPn",                 
+                "networking":{
+
+                    "AdminNetwork":{
+                        "Subnet":"10.117.192.0/24",
+                        "firstIPAddress":"10.117.192.18",
+                        "Default":true,
+                        "Portgroup":"Vlan 1195",
+                        "netmask":"",
+                        "gateway":""
+                    },
+                    "BackupNetwork":{
+                        "Subnet":"10.70.192.0/23",
+                        "firstIPAddress":"10.70.192.18",
+                        "Default":false,
+                        "Portgroup":"Vlan 1824",
+                        "netmask":"",
+                        "gateway":""                                        
+                    },
+                    "PublicNetwork":{
+                        "Subnet":"10.70.115.0/26",
+                        "firstIPAddress":"10.70.115.18",
+                        "Default":false,
+                        "Portgroup":"Vlan 1821",
+                        "netmask":"",
+                        "gateway":""                                         
+                    },
+                    "PrivateNetwork":{
+                        "Subnet":"10.111.192.0/24",
+                        "firstIPAddress":"10.111.192.18",
+                        "Default":false,
+                        "Portgroup":"Vlan 1848",
+                        "netmask":"",
+                        "gateway":""                  
+                    }
+
+                }                
+            },
+
+            "Standard":{},
+        },
+        
+        "ExtraOptions" :{
+            "isolation.tools.diskWiper.disable" : true,
+            "isolation.tools.diskShrink.disable" : true,
+            "RemoteDisplay.maxConnections" : "2",
+            "isolation.tools.copy.disable" : true,
+            "isolation.tools.paste.disable" : true,
+            "isolation.tools.setGUIOptions.enable" : false,
+            "isolation.tools.dnd.disable" : true,
+            "isolation.device.connectable.disable" : true,
+            "isolation.device.edit.disable" : true,
+            "vmci0.unrestricted" : false,
+            "log.rotateSize" : "1000000",
+            "log.keepOld" : "10",
+            "tools.setInfo.sizeLimit" : "1048576",
+            "guest.command.enabled" : false,
+            "tools.guestlib.enableHostInfo" : false,
+            "isolation.tools.unity.push.update.disable" : true,
+            "isolation.tools.ghi.launchmenu.change" : true,
+            "isolation.tools.memSchedFakeSampleStats.disable" : true,
+            "isolation.tools.getCreds.disable" : true,
+            "RemoteDisplay.vnc.enabled" : false,
+            "floppyX.present" : false,
+            "SerialX.present" : false,
+            "parallelX.present" : false,
+            "usb.present" : false,
+            "ideX:Y.present" : false
+        }
+
+    }
+}
