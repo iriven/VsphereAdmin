@@ -49,7 +49,7 @@ class PSIrivenVMEditor{
     }
      CreateSnapshot()
     {
-        $this.VMObject | where {$_.PowerState -match "On"} |ForEach-Object{
+        $this.VMObject | where {($_.PowerState -match "On") -And ($_.ExtensionData.Guest.ToolsStatus -NotLike "*NotInstalled")}  |ForEach-Object{
             $SnapshotName = 'Snapshot_'+ $($_.Name) + '_' + $(Get-Date -Format 'MM-dd-yyyy-HHmmss');
             $message = 'Creating New Snapshot for VM: ' + $($_.Name) + ' with name: ' + $SnapshotName
             [PSIrivenEvents]::DisplayMessage("$message",'white')
@@ -67,8 +67,10 @@ class PSIrivenVMEditor{
 
 
     RemoveSnapshot(){
-        $this.VMObject | ForEach-Object{
-            $snapshot =(Get-VM -Name $_.Name| Get-Snapshot | Where {$_.Created -lt (Get-Date).AddDays(+1)})
+        if(-not([PSIrivenUtils]::PropertyExists($this.Settings,'MinAge'))){$this.Settings.Set_Item('MinAge','3')}
+        $this.VMObject | where {($_.PowerState -match "On") -And ($_.ExtensionData.Guest.ToolsStatus -NotLike "*NotInstalled")} | ForEach-Object{
+            $days="-$($this.Settings.MinAge)"
+            $snapshot =(Get-VM -Name $_.Name| Get-Snapshot | Where {$_.Created -lt (Get-Date).AddDays($days)})
             $SnapshotMeasure = ($snapshot | Measure-Object)
             if ($SnapshotMeasure.Count -gt 0) {
                 $message = " Removing " + ($SnapshotMeasure.Count).ToString() +" Snapshot(s) for VM $($_.Name)"

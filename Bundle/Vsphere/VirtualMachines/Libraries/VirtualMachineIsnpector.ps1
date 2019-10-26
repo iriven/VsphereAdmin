@@ -361,6 +361,7 @@ class PSIrivenVMInfos{
 
     GetNetworkReport()
     {
+        if(-not([PSIrivenUtils]::PropertyExists($this.Settings,'MinAge'))){$this.Settings.Set_Item('MinAge','0')}
         $MenusItems = ( $this.Settings.DisplayMode.GetEnumerator()| ForEach-Object{$_.Name}| sort-object)
         [String]$OutputMode = $([PSIrivenMenu]::Generate($MenusItems, "PLEASE CHOOSE THE DESIRED OUTPUT DESTINATION"))
         if (-not($OutputMode))

@@ -1,12 +1,12 @@
 {
   "Inventory": {
-    "vcentername1": "ipaddress1",
-    "vcentername2": "ipaddress2",
-    "vcentername3": "ipaddress3",
-    "vcentername4": "ipaddress4"
+    "Aubervilliers": "opsidiasaubvc01-adm.bagnolet.francetelecom.fr",
+    "Lyon": "opsidiasaubvc02-adm.bagnolet.francetelecom.fr",
+    "Montsouri": "opsidiasmonvc01-adm.intranet-paris.francetelecom.fr",
+    "Vdr": "opsidiasmonvc01-adm.intranet-paris.francetelecom.fr"
   },
   "Credentials": {
-    "Login": "vcenter_sso_username",
+    "Login": "sjhc1170",
     "Persistent": true,
     "InvalidCertificateAction": "ignore"
   }
