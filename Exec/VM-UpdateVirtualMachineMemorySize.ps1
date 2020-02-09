@@ -37,12 +37,21 @@
 #>
 [CmdletBinding()]
 param( 
-    [Parameter(Mandatory=$false,                            
+    [Parameter(Mandatory=$true,                            
         ValueFromPipeline=$True,                            
-        Position=0)]$VMs,                 
-    [Parameter(Mandatory=$false,                           
+        Position=0)]$VMs,
+    [Parameter(Mandatory=$true,                           
         ValueFromPipeline=$true,                            
         Position=1)]
+    [Int32][ValidateRange(1,48)]$MemoryGB,                  
+    [Parameter(Mandatory=$false,                           
+        ValueFromPipeline=$true,                            
+        Position=2)]
+    [ValidateSet("set","add","reduce")]
+    [String]$Action='set',                         
+    [Parameter(Mandatory=$false,                           
+        ValueFromPipeline=$true,                            
+        Position=3)]
     [bool]$AutoLogout=$false  
 )
 if(!$PSScriptRoot){ $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent }
@@ -54,25 +63,27 @@ $IrivenClassmap = 'IrivenVsphereAdminBundle.ps1'
 try {
     . (Join-Path $SrcDirectory $IrivenClassmap)
     $ConfigInstance = [PSIrivenConfig]::New($ConfigDirectory)
-
     if(-not([PSIrivenVISession]::isStarted()))
     {
         $ConfigInstance.Parse('Sessions')
         $VCSession = [PSIrivenVISession]::New($ConfigInstance.GetParams())
         $VCSession.Start()
     }
+    #if(-not($VMs)) { $VMs = (Get-VM)}
+    #if(-not($VMs)) { $VMs = (get-cluster "*wup*"|where-object{$_.Name -Match "wup"}|Get-VM)}
     if(-not($VMs)) { $VMs = (Get-VM)}
-    if($VMs -is [system.String]) { $VMs = (Get-VM "$VMs")}
+    if($VMs -is [system.String]) {$VMs = (Get-VM "$VMs") }
     $VMs = $($VMs| ? {$_.pstypenames -contains "VMware.VimAutomation.ViCore.Impl.V1.Inventory.InventoryItemImpl"})
-    if (-not $VMs){ Throw "No Virtual Machine found.`nIs ""$VMs"" a VM Object ?" }  
+    if (-not $VMs){ Throw "No Virtual Machine found.`nIs ""$VMs"" a VM Object ?" }   
     $ConfigInstance.Parse('Outputs')
     $Config = $ConfigInstance.GetParams()
     $Config.Set_Item('OutputsDirectory', $OutputsDirectory)
-    $VirtualMachine = [PSIrivenVMInfos]::New($VMs,$Config)
-    $VirtualMachine.GetToolsInfo()
+    $Config.Set_Item('Action', $Action)
+    $Config.Set_Item('MemoryGB', $MemoryGB)
+    $VirtualMachine = [PSIrivenVMEditor]::New($VMs,$Config)
+    $VirtualMachine.UpdateVMmemoryResevation()
     if($AutoLogout -eq $true){[PSIrivenVISession]::Close() }
 }
 catch [Exception]{
   write-error -Message $_.Exception.Message  -EA Stop
 }
-

@@ -21,7 +21,8 @@ try
     . (Join-Path $PSScriptRoot 'Libraries\EventLogger.ps1') 
     . (Join-Path $PSScriptRoot 'Libraries\ConfigReader.ps1')   
     . (Join-Path $PSScriptRoot 'Libraries\Navigation.ps1')
-    . (Join-Path $PSScriptRoot 'Libraries\IPV4Utilities.ps1')        
+    . (Join-Path $PSScriptRoot 'Libraries\IPV4Utilities.ps1')  
+    . (Join-Path $PSScriptRoot 'Libraries\Forms.ps1')           
 }
 catch
 {

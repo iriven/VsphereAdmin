@@ -37,12 +37,22 @@
 #>
 [CmdletBinding()]
 param( 
-    [Parameter(Mandatory=$false,                            
+    [Parameter(Mandatory=$true,                            
         ValueFromPipeline=$True,                            
-        Position=0)]$VMs,                 
-    [Parameter(Mandatory=$false,                           
+        Position=0)]
+    [String]$VMs,
+    [Parameter(Mandatory=$true,                           
         ValueFromPipeline=$true,                            
         Position=1)]
+    [Int32][ValidateRange(1,48)]$NumCpu,                  
+    [Parameter(Mandatory=$false,                           
+        ValueFromPipeline=$true,                            
+        Position=2)]
+    [ValidateSet("set","add","reduce")]
+    [String]$Action='set',                         
+    [Parameter(Mandatory=$false,                           
+        ValueFromPipeline=$true,                            
+        Position=3)]
     [bool]$AutoLogout=$false  
 )
 if(!$PSScriptRoot){ $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent }
@@ -61,18 +71,28 @@ try {
         $VCSession = [PSIrivenVISession]::New($ConfigInstance.GetParams())
         $VCSession.Start()
     }
+    #if(-not($VMs)) { $VMs = (Get-VM)}
+    #if(-not($VMs)) { $VMs = (get-cluster "*wup*"|where-object{$_.Name -Match "wup"}|Get-VM)}
     if(-not($VMs)) { $VMs = (Get-VM)}
-    if($VMs -is [system.String]) { $VMs = (Get-VM "$VMs")}
+    if($VMs -is [system.String]) {$VMs = (Get-VM "$VMs") }
     $VMs = $($VMs| ? {$_.pstypenames -contains "VMware.VimAutomation.ViCore.Impl.V1.Inventory.InventoryItemImpl"})
     if (-not $VMs){ Throw "No Virtual Machine found.`nIs ""$VMs"" a VM Object ?" }  
     $ConfigInstance.Parse('Outputs')
     $Config = $ConfigInstance.GetParams()
     $Config.Set_Item('OutputsDirectory', $OutputsDirectory)
-    $VirtualMachine = [PSIrivenVMInfos]::New($VMs,$Config)
-    $VirtualMachine.GetToolsInfo()
+    $Config.Set_Item('Action', $Action)
+    $Config.Set_Item('NumCpu', $NumCpu)
+    $VirtualMachine = [PSIrivenVMEditor]::New($VMs,$Config)
+    $VirtualMachine.UpdateVMCPUResevation()
     if($AutoLogout -eq $true){[PSIrivenVISession]::Close() }
 }
 catch [Exception]{
   write-error -Message $_.Exception.Message  -EA Stop
 }
 
+
+
+
+
+
+#$VMname | Set-VM -NumCpu 28 -NumCpu $TotalvCPU -Confirm:$false

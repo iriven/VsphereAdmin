@@ -1,17 +1,38 @@
 <# Header_start
-#################################################################################
-#                                                                               #
-#   Module PowerShell / Powercli Pour Administration Infra virtualisée VMware   #
-#                                                                               #
-# ----------------------------------------------------------------------------- #
-#   Author: Alfred TCHONDJO - Iriven France    (POUR ORANGE)                    #
-#   Date: 2019-02-08                                                            #
-# ----------------------------------------------------------------------------- #
-#   Revisions                                                                   #
-#                                                                               #
-#   G1R0C0 :    Creation du script le 08/02/2019 (AT)                           #
-#                                                                               #
-#################################################################################
+################################################################################################
+#                                                                                              #
+#  Author:         Alfred TCHONDJO - (Iriven France)   Pour Orange                             #
+#  Date:           2020-02-04                                                                  #
+#  Website:        https://github.com/iriven?tab=repositories                                  #
+#                                                                                              #
+# -------------------------------------------------------------------------------------------- #
+#                                                                                              #
+#  Project:        PowerShell / Powercli Framework                                             #
+#  Description:	   A class based PowerShell/Powercli librairy to manage VMware Infrastructure  #
+#  Version:        1.0.0    (G1R0C0)                                                           #
+#                                                                                              #
+#  License:		   GNU GPLv3                                                                   #
+#                                                                                              #
+#  This program is free software: you can redistribute it and/or modify                        #
+#  it under the terms of the GNU General Public License as published by                        #
+#  the Free Software Foundation, either version 3 of the License, or                           #
+#  (at your option) any later version.                                                         #
+#                                                                                              #
+#  This program is distributed in the hope that it will be useful,                             #
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of                              #
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                               #
+#  GNU General Public License for more details.                                                #
+#                                                                                              #
+#  You should have received a copy of the GNU General Public License                           #
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.                       #
+#                                                                                              #
+# -------------------------------------------------------------------------------------------- #
+#  Revisions                                                                                   #
+#                                                                                              #
+#  - G1R0C0 :        Creation du script le 04/02/2020 (AT)                                     #
+#  - G1R0C1 :        MAJ - Modification VM Memory Size le 04/02/2020 (AT)                      #
+#                                                                                              #
+################################################################################################
 # Header_end
 #>
 [CmdletBinding()]
@@ -33,7 +54,7 @@ $IrivenClassmap = 'IrivenVsphereAdminBundle.ps1'
 try {
     . (Join-Path $SrcDirectory $IrivenClassmap)
     $ConfigInstance = [PSIrivenConfig]::New($ConfigDirectory)
-$Cluster="CLAVDRSIDPMS01"
+    $Cluster="CLAVDRSIDPMS01"
     if(-not([PSIrivenVISession]::isStarted()))
     {
         $ConfigInstance.Parse('Sessions')
@@ -42,13 +63,13 @@ $Cluster="CLAVDRSIDPMS01"
     }
     if(-not($Cluster)) { $Cluster = (Get-Cluster)}
     if($Cluster -is [system.String]) { $Cluster = (Get-Cluster "*$Cluster*")}
-    $Cluster = $($Cluster| where-object {$_.pstypenames -contains "VMware.VimAutomation.ViCore.Impl.V1.Inventory.InventoryItemImpl"})
+    $Cluster = $($Cluster| where-object {$_.pstypenames -contains "VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl"})
     if (-not $Cluster){ Throw "No Cluster found.`nIs ""$Cluster"" a Vsphere Cluster Object ?" }  
     $ConfigInstance.Parse('Outputs')
     $Config = $ConfigInstance.GetParams()
     $Config.Set_Item('OutputsDirectory', $OutputsDirectory)
-    #$VirtualMachine = [PSIrivenVMInfos]::New($Cluster,$Config)
-    #$VirtualMachine.GetNetworkReport()
+    #$ClusterObject = [PSIrivenCLSInfos]::New($Cluster,$Config)
+    #$ClusterObject.GetNetworkReport()
 
 
 #https://www.virtualease.fr/powercli-script-contention-overcommit

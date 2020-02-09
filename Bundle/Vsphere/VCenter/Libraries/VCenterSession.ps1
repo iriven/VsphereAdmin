@@ -30,6 +30,17 @@ class PSIrivenVISession{
     [String]
     hidden $DbType = 'irivendb'
 
+    [ValidateNotNullOrEmpty()]
+    [ValidateSet('Fail','Warn','Prompt','Ignore')]
+    [String]
+    hidden $InvalidCertificate = 'ignore'
+
+#/*
+#- Fail (default)
+#- Warn
+#- Prompt
+#- Ignore
+#*/
 
     PSIrivenVISession([HashTable]$Config)
     {
@@ -45,6 +56,12 @@ class PSIrivenVISession{
             if(-not([PSIrivenUtils]::PropertyExists($Config.Credentials,'Persistent')))
             {$Config.Credentials.Set_Item('Persistent',$this.UseCredentials)}
             $Config.Credentials.Set_Item('Persistent',[PSIrivenUtils]::GetBoolean($Config.Credentials.Persistent))
+            $pattern = "^(fail|ignore|prompt|warn)$"
+            if(-not([PSIrivenUtils]::PropertyExists($Config.Credentials,'InvalidCertificateAction')))
+            {$Config.Credentials.Set_Item('InvalidCertificateAction',$this.InvalidCertificate)}
+            if(-not($Config.Credentials.InvalidCertificateAction -match $pattern)){
+                throw "Error: Invalid value given for the Parameter InvalidCertificateAction. Expected value: fail|ignore|prompt|warn"
+            }
             $this.Settings += $Config
         }
         catch [Exception]{
@@ -61,8 +78,7 @@ class PSIrivenVISession{
 
     Start()
     {
-        Set-PowerCLIConfiguration -InvalidCertificateAction Ignore -Scope User -Confirm:$false| Out-Null
-  
+        Set-PowerCLIConfiguration -InvalidCertificateAction $this.Settings.Credentials.InvalidCertificateAction -Scope User -Confirm:$false| Out-Null
         $MenusItems = ($this.Settings.Inventory.GetEnumerator() | ForEach-Object{$_.Key}| sort-object)
         [String]$vCenterName = $([PSIrivenMenu]::Generate($MenusItems, "PLEASE CHOOSE THE VCENTER YOU WANT TO JOIN"))
         if (-not($vCenterName))

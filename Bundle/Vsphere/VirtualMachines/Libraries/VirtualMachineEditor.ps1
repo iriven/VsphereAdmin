@@ -1,17 +1,38 @@
 <# Header_start
-#################################################################################
-#                                                                               #
-#   Module PowerShell / Powercli Pour Administration Infra virtualisée VMware   #
-#                                                                               #
-# ----------------------------------------------------------------------------- #
-#   Author: Alfred TCHONDJO - Iriven France    (POUR ORANGE)                    #
-#   Date: 2019-02-08                                                            #
-# ----------------------------------------------------------------------------- #
-#   Revisions                                                                   #
-#                                                                               #
-#   G1R0C0 :    Creation du script le 08/02/2019 (AT)                           #
-#                                                                               #
-#################################################################################
+################################################################################################
+#                                                                                              #
+#  Author:         Alfred TCHONDJO - (Iriven France)   Pour Orange                             #
+#  Date:           2020-02-04                                                                  #
+#  Website:        https://github.com/iriven?tab=repositories                                  #
+#                                                                                              #
+# -------------------------------------------------------------------------------------------- #
+#                                                                                              #
+#  Project:        PowerShell / Powercli Framework                                             #
+#  Description:	   A class based PowerShell/Powercli librairy to manage VMware Infrastructure  #
+#  Version:        1.0.0    (G1R0C0)                                                           #
+#                                                                                              #
+#  License:		   GNU GPLv3                                                                   #
+#                                                                                              #
+#  This program is free software: you can redistribute it and/or modify                        #
+#  it under the terms of the GNU General Public License as published by                        #
+#  the Free Software Foundation, either version 3 of the License, or                           #
+#  (at your option) any later version.                                                         #
+#                                                                                              #
+#  This program is distributed in the hope that it will be useful,                             #
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of                              #
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                               #
+#  GNU General Public License for more details.                                                #
+#                                                                                              #
+#  You should have received a copy of the GNU General Public License                           #
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.                       #
+#                                                                                              #
+# -------------------------------------------------------------------------------------------- #
+#  Revisions                                                                                   #
+#                                                                                              #
+#  - G1R0C0 :        Creation du script le 04/02/2020 (AT)                                     #
+#  - G1R0C1 :        MAJ - Modification VM Memory Size le 04/02/2020 (AT)                      #
+#                                                                                              #
+################################################################################################
 # Header_end
 #>
 class PSIrivenVMEditor{
@@ -116,8 +137,208 @@ class PSIrivenVMEditor{
         }        
    }
 
+    UpdateVMmemoryResevation()
+    {
+        if (-not([PSIrivenUtils]::PropertyExists($this.Settings,'Action'))){ $this.Settings.Set_Item('Action','set')}
+        if (-not([PSIrivenUtils]::PropertyExists($this.Settings,'MemoryGB'))){ Throw "Parameter Error. The new VM memory size value is not given."}
+        $Result = New-Object System.Collections.ArrayList
+        $vmConfigSpec = New-Object VMware.Vim.VirtualMachineConfigSpec
+        $MemoryHotAdd = New-Object VMware.Vim.optionvalue
+        $Total = $this.VMObject.count
+        $counter = 0
+        $this.VMObject | ForEach-Object{
+            $VMView = (Get-View $_) 
+            $MemoryBGBefore=$_.MemoryGB
+            $VMName = $_.Name
+            $PowerState = $_.PowerState        
+            $VMHost = ($_.VMHost).Name        
+            $Cluster = ($_.VMHost).Parent
+            $PowerCycleNeeded=$false
+            $vCenter = $_.Uid.Substring($_.Uid.IndexOf('@')+1).Split(":")[0]
+            if($this.Settings.ShowProgress)
+            {
+                $counter++
+                $Parameters = @{ Activity = "vCEnter $($vCenter): -- Updating Virtual Machine Memory size  -->";
+                                 Status = "-- Querying VM: [{0} of {1}]" -f $($counter), $($Total);
+                                 CurrentOperation = $_;
+                                 PercentComplete = (($counter /  $Total) * 100) 
+                               }     
+                Write-Progress @Parameters
+            }
+            $MemoryHotAddEnabled = [PSIrivenUtils]::GetBoolean("$($VMView.Config.MemoryHotAddEnabled)") 
+            if (-not($MemoryHotAddEnabled)) {
+                $MemoryHotAdd.Key = "mem.hotadd"
+                $MemoryHotAdd.Value = "true"
+                $vmConfigSpec.extraconfig += $MemoryHotAdd
+                $message = "Activating 'Memory Hot Add' Option to VM: $($_.Name)"
+                [PSIrivenEvents]::DisplayMessage("$message", 'white', $true)
+                [PSIrivenEvents]::DisplayMessage(("." * 10), 'white', $true)
+                 #$_.Extensiondata.ReconfigVM($vmConfigSpec)
+                $vmView.ReconfigVM($vmConfigSpec)
+                [PSIrivenEvents]::DisplayMessage("done!", "green")
+                sleep -Seconds 3
+                $PowerCycleNeeded = $true
+            }
+            if(($_.PowerState -match "On") -And ($PowerCycleNeeded -eq $true))
+            {
+                [PSIrivenEvents]::DisplayMessage("WARNING: The new setting will take effect after the next VM PowerCycle (Power Off/On) not GuestOS Reboot", 'yellow')
+                [PSIrivenEvents]::DisplayMessage("WARNING: The VM Memory reservation was not modified !. Please PowerCycle the VM, and then re-run this script in order to change your VM Memory size", 'yellow')
+                [PSIrivenUtils]::AddNewLine()
+            }
+            else
+            {
+                switch -regex ($this.Settings.Action)
+                {
+                    '^reduce'{
+                        if(-not($PowerState -match "On")){
+                            if( $this.Settings.MemoryGB -ge $MemoryBGBefore){ Throw "Parameter Error. The memory size to remove from VM $($VMName) can not be greater than it total memory size" } 
+                            $NewMemoryGB = $MemoryBGBefore - $this.Settings.MemoryGB
+                            set-vm -VM "$($VMName)" -MemoryGB "$($NewMemoryGB)" -Confirm:$false ; 
+                        } else{
+                            [PSIrivenEvents]::DisplayMessage("WARNING: The VM $($VMName) is now Powered On. Memory Hot-remove is not supported in VMware Vsphere", 'yellow')
+                            [PSIrivenEvents]::DisplayMessage("Please Power Off de VM and re-run the script!", 'yellow')
+                            [PSIrivenUtils]::AddNewLine()
+                        }
+                        break
+                    }
+                    '^add'{ 
+                        $NewMemoryGB = $MemoryBGBefore + $this.Settings.MemoryGB
+                        set-vm -VM "$($VMName)" -MemoryGB "$($NewMemoryGB)" -Confirm:$false ;  break }
+                    default {
+                        if( ($this.Settings.MemoryGB -ge $MemoryBGBefore) -And ($PowerState -match "On")){ 
+                            [PSIrivenEvents]::DisplayMessage("WARNING: The desired Memory size is less than the current $($VMName) VM memory size. Memory Hot-reduce is not supported in VMware Vsphere", 'yellow')
+                            [PSIrivenEvents]::DisplayMessage("Please Power Off the $($VMName) VM and re-run the script!", 'yellow')
+                            [PSIrivenUtils]::AddNewLine()
+
+                        } else{
+                            Set-VM -VM "$($VMName)" -MemoryGB "$($this.Settings.MemoryGB)" -Confirm:$false ; 
+                            sleep 1;
+                        }
+                        break 
+                    } 
+                }
+            }
+            $MemoryBGAfter=(Get-VM -Name "$($VMName)").MemoryGB
+            $VmReport = New-Object -Type PSObject -Property ([ordered]@{
+                Name = "$($VMName)"
+                PowerState = "$($PowerState)"
+                MemoryHotAddEnabled = "$($VMView.Config.MemoryHotAddEnabled)"       
+                MemoryBefore = ([math]::Round($MemoryBGBefore,2)| % {$([double]$_).ToString()}) + ' GB'  
+                MemoryAfter = ([math]::Round($MemoryBGAfter,2)| % {$([double]$_).ToString()}) + ' GB' 
+                VMHost = "$($VMHost)"         
+                Cluster = "$($Cluster)" 
+            })
+            $Result.Add($VmReport) | Out-Null
+        }
+         $Result| out-default 
+        if($? -eq $true){
+            [PSIrivenUtils]::AddNewLine()
+            [PSIrivenEvents]::DisplayMessage('Job Successfully finished ', 'green')
+            [PSIrivenEvents]::DisplayMessage('Exiting ','white', $true)
+            [PSIrivenEvents]::DisplayMessage(("." * 10), 'white', $true)
+            sleep -Seconds 1
+            [PSIrivenEvents]::DisplayMessage("done!", "green")
+            [PSIrivenUtils]::AddNewLine()
+        }        
+    }
+
+    UpdateVMCPUResevation()
+    {
+        if (-not([PSIrivenUtils]::PropertyExists($this.Settings,'Action'))){ $this.Settings.Set_Item('Action','set')}
+        if (-not([PSIrivenUtils]::PropertyExists($this.Settings,'NumCpu'))){ Throw "Parameter Error. The new VM Total vCPU value is not given."}
+        $Result = New-Object System.Collections.ArrayList
+        $vmConfigSpec = New-Object VMware.Vim.VirtualMachineConfigSpec
+        $vCPUHotAdd = New-Object VMware.Vim.optionvalue
+        $Total = $this.VMObject.count
+        $counter = 0        
+        $this.VMObject | ForEach-Object{
+            $VMView = (Get-View $_) 
+            $TotalCPUBefore=$_.NumCpu
+            $VMName = $_.Name
+            $PowerState = $_.PowerState        
+            $VMHost = ($_.VMHost).Name        
+            $Cluster = ($_.VMHost).Parent
+            $PowerCycleNeeded=$false
+            if($this.Settings.ShowProgress)
+            {
+                $counter++
+                $Parameters = @{ Activity = "vCEnter $($vCenter): -- Updating Virtual Machine Memory size  -->";
+                                 Status = "-- Querying VM: [{0} of {1}]" -f $($counter), $($Total);
+                                 CurrentOperation = $_;
+                                 PercentComplete = (($counter /  $Total) * 100) 
+                               }     
+                Write-Progress @Parameters
+            }
+            $CpuHotAddEnabled = [PSIrivenUtils]::GetBoolean("$($VMView.Config.CpuHotAddEnabled)") 
+            if (-not($CpuHotAddEnabled)) {
+                $vCPUHotAdd.Key = "vcpu.hotadd"
+                $vCPUHotAdd.Value = "true"
+                $vmConfigSpec.extraconfig += $vCPUHotAdd
+                $message = "Activating 'vCPU Hot Add' Option to VM: $($_.Name)"
+                [PSIrivenEvents]::DisplayMessage("$message", 'white', $true)
+                [PSIrivenEvents]::DisplayMessage(("." * 10), 'white', $true)
+                 #$_.Extensiondata.ReconfigVM($vmConfigSpec)
+                $vmView.ReconfigVM($vmConfigSpec)
+                [PSIrivenEvents]::DisplayMessage("done!", "green")
+                sleep -Seconds 3
+                $PowerCycleNeeded = $true
+            }
+            if(($_.PowerState -match "On") -And ($PowerCycleNeeded -eq $true))
+            {
+                [PSIrivenEvents]::DisplayMessage("WARNING: The new setting will take effect after the next VM PowerCycle (Power Off/On)", 'yellow')
+                [PSIrivenEvents]::DisplayMessage("When done, re-run this script in order to change your VM vCPU reservation", 'yellow')
+                [PSIrivenUtils]::AddNewLine()
+            }
+            else
+            {
+                switch -regex ($this.Settings.Action)
+                {
+                    '^reduce'{
+                        if(-not($PowerState -match "On")){
+                            if( $this.Settings.NumCpu -ge $TotalCPUBefore){ Throw "Parameter Error. The Total vCPU to remove from VM $($VMName) can not be greater than it maximum vCPU" } 
+                            $NewNumCpu = $TotalCPUBefore - $this.Settings.NumCpu
+                            set-vm -VM "$($VMName)" -NumCpu "$($NewNumCpu)" -Confirm:$false ; 
+                        } else{
+                            [PSIrivenEvents]::DisplayMessage("WARNING: The VM $($VMName) is now Powered On. vCPU Hot-remove is not supported in VMware Vsphere", 'yellow')
+                            [PSIrivenEvents]::DisplayMessage("Please Power Off de VM and re-run the script!", 'yellow')
+                            [PSIrivenUtils]::AddNewLine()
+                        }
+                        break
+                    }
+                    '^add'{ 
+                        $NewNumCpu = $TotalCPUBefore + $this.Settings.NumCpu
+                        set-vm -VM "$($VMName)" -NumCpu "$($NewNumCpu)" -Confirm:$false ;  break }
+                    default {
+                        Set-VM -VM "$($VMName)" -NumCpu "$($this.Settings.NumCpu)" -Confirm:$false ; 
+                        sleep 3; 
+                        break 
+                    } 
+                }
+            }
+            $TotalCPUAfter=(Get-VM -Name "$($VMName)").NumCpu
+            $VmReport = New-Object -Type PSObject -Property ([ordered]@{
+                Name = "$($VMName)"
+                PowerState = "$($PowerState)"
+                CpuHotAddEnabled = "$($VMView.Config.CpuHotAddEnabled)"       
+                vCPUBefore = ([math]::Round($TotalCPUBefore,2)| % {$([double]$_).ToString()}) 
+                vCPUAfter = ([math]::Round($TotalCPUAfter,2)| % {$([double]$_).ToString()})
+                VMHost = "$($VMHost)"         
+                Cluster = "$($Cluster)" 
+            })
+            $Result.Add($VmReport) | Out-Null
+        }
+         $Result| out-default 
+        if($? -eq $true){
+            [PSIrivenUtils]::AddNewLine()
+            [PSIrivenEvents]::DisplayMessage('Job Successfully finished ', 'green')
+            [PSIrivenEvents]::DisplayMessage('Exiting ','white', $true)
+            [PSIrivenEvents]::DisplayMessage(("." * 10), 'white', $true)
+            sleep -Seconds 1
+            [PSIrivenEvents]::DisplayMessage("done!", "green")
+            [PSIrivenUtils]::AddNewLine()
+        }        
+    }
 
 
-
-
+    
 }

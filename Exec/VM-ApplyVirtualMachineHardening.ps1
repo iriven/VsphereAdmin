@@ -37,7 +37,7 @@
 #>
 [CmdletBinding()]
 param( 
-    [Parameter(Mandatory=$false,                            
+    [Parameter(Mandatory=$true,                            
         ValueFromPipeline=$True,                            
         Position=0)]$VMs,                 
     [Parameter(Mandatory=$false,                           
@@ -65,14 +65,14 @@ try {
     if($VMs -is [system.String]) { $VMs = (Get-VM "$VMs")}
     $VMs = $($VMs| ? {$_.pstypenames -contains "VMware.VimAutomation.ViCore.Impl.V1.Inventory.InventoryItemImpl"})
     if (-not $VMs){ Throw "No Virtual Machine found.`nIs ""$VMs"" a VM Object ?" }  
-    $ConfigInstance.Parse('Outputs')
+
+    $ConfigInstance.Parse('VMHardening')
     $Config = $ConfigInstance.GetParams()
-    $Config.Set_Item('OutputsDirectory', $OutputsDirectory)
-    $VirtualMachine = [PSIrivenVMInfos]::New($VMs,$Config)
-    $VirtualMachine.GetToolsInfo()
+    $Config.Set_Item('ExtraOptions', $Config)
+    $VirtualMachine = [PSIrivenVMSecurity]::New($VMs,$Config)
+    $VirtualMachine.ApplyHardening()
     if($AutoLogout -eq $true){[PSIrivenVISession]::Close() }
 }
 catch [Exception]{
   write-error -Message $_.Exception.Message  -EA Stop
 }
-

@@ -38,8 +38,8 @@
 [CmdletBinding()]
 param( 
     [Parameter(Mandatory=$false,                            
-        ValueFromPipeline=$True,                            
-        Position=0)]$VMs,                 
+        ValueFromPipeline=$false,                            
+        Position=0)]$VMs,                  
     [Parameter(Mandatory=$false,                           
         ValueFromPipeline=$true,                            
         Position=1)]
@@ -61,6 +61,8 @@ try {
         $VCSession = [PSIrivenVISession]::New($ConfigInstance.GetParams())
         $VCSession.Start()
     }
+    #if(-not($VMs)) { $VMs = (Get-VM)}
+    #if(-not($VMs)) { $VMs = (get-cluster "*wup*"|where-object{$_.Name -Match "wup"}|Get-VM)}
     if(-not($VMs)) { $VMs = (Get-VM)}
     if($VMs -is [system.String]) { $VMs = (Get-VM "$VMs")}
     $VMs = $($VMs| ? {$_.pstypenames -contains "VMware.VimAutomation.ViCore.Impl.V1.Inventory.InventoryItemImpl"})
@@ -69,10 +71,9 @@ try {
     $Config = $ConfigInstance.GetParams()
     $Config.Set_Item('OutputsDirectory', $OutputsDirectory)
     $VirtualMachine = [PSIrivenVMInfos]::New($VMs,$Config)
-    $VirtualMachine.GetToolsInfo()
+    $VirtualMachine.GetHotPlugOptionsInfos()
     if($AutoLogout -eq $true){[PSIrivenVISession]::Close() }
 }
 catch [Exception]{
   write-error -Message $_.Exception.Message  -EA Stop
 }
-

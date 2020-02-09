@@ -193,5 +193,29 @@
             }
             return $Variable
         }
+
+       # Static [String] getUniqueString([integer]$length) 
+       # {
+       #     $rand = new-object System.Random
+        #    1..$length | foreach { $string = $string + [char]$rand.next(101,107) }
+        #    return $string
+        #}
+
+   #    Static verifyIp([string]$ipAddress) {
+   #     try {
+   #         #$ipObj = [System.Net.IPAddress]::parse($ipAddress)
+   #         #$isValidIP = [System.Net.IPAddress]::tryparse([string]$ipAddress, [ref]$ipObj)
+   #         $ip = ([System.Net.Dns]::GetHostAddresses($ipaddress)).IPAddressToString
+   #     } catch {
+   #         return $false
+   #     }
+   #     return $ip
+   #     # if ($isValidIP) {
+   #     # return $true
+   #     # } else {
+   #     # return $false
+   #     # }
+   # }
+#$cred = new-object -typeName System.management.automation.pscredential -argumentList $user, (ConvertTo-SecureString $password -asPlainText -Force)
       
-    } # CLASS END
+} # CLASS END
